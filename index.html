@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Teacher Planner</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial;
+}
+
+body {
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  min-height: 100vh;
+}
+
+/* DARK MODE */
+body.dark {
+  background: #111;
+}
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.todo-app {
+  width: 95%;
+  max-width: 800px; /* 🔥 increased size */
+  padding: 35px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(255,0,0,0.4);
+}
+
+/* DARK MODE CARD */
+body.dark .todo-app {
+  background: #222;
+  color: white;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+input, select {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  width: 100%;
+}
+
+button {
+  background: linear-gradient(45deg, #ff3b3b, #ff0000);
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+.tabs {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.tabs button {
+  margin: 5px;
+}
+
+.clear-btn {
+  display: block;
+  margin: 10px auto;
+  background: #222;
+}
+
+ul li {
+  list-style: none;
+  padding: 12px;
+  margin-top: 10px;
+  background: #f5f5f5;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+}
+
+/* DARK MODE TASK */
+body.dark ul li {
+  background: #333;
+}
+
+.checked {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* DELETE BUTTON */
+.delete-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: black;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="todo-app">
+    <h2>👩‍🏫 Teacher Planner</h2>
+
+    <!-- 🔍 SEARCH + DARK MODE -->
+    <div class="row">
+      <input id="search" placeholder="Search..." oninput="render()">
+      <button onclick="toggleDark()">🌙</button>
+    </div>
+
+    <div class="row">
+      <input id="task" placeholder="Task">
+      <input id="student" placeholder="Student">
+    </div>
+
+    <div class="row">
+      <input type="date" id="date">
+
+      <select id="type">
+        <option>Assignment</option>
+        <option>Exam</option>
+        <option>Practical</option>
+        <option>Class test</option>
+      </select>
+
+      <button onclick="addTask()">Add</button>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="tabs">
+      <button onclick="filterTasks('all')">All</button>
+      <button onclick="filterTasks('Assignment')">Assignments</button>
+      <button onclick="filterTasks('Exam')">Exams</button>
+      <button onclick="filterTasks('Practical')">Practical</button>
+      <button onclick="filterTasks('Class test')">Class Test</button>
+    </div>
+
+    <button class="clear-btn" onclick="clearAll()">Clear All</button>
+
+    <ul id="list"></ul>
+  </div>
+</div>
+
+<script>
+let tasks = [];
+let currentFilter = "all";
+
+// ADD
+function addTask() {
+  let task = document.getElementById("task").value;
+  let student = document.getElementById("student").value;
+  let date = document.getElementById("date").value;
+  let type = document.getElementById("type").value;
+
+  if (!task || !student || !date) {
+    alert("Fill all fields");
+    return;
+  }
+
+  tasks.push({ task, student, date, type, done:false });
+
+  document.getElementById("task").value = "";
+  document.getElementById("student").value = "";
+  document.getElementById("date").value = "";
+
+  save();
+  render();
+}
+
+// RENDER
+function render() {
+  let list = document.getElementById("list");
+  let search = document.getElementById("search").value.toLowerCase();
+  list.innerHTML = "";
+
+  tasks.forEach((t, i) => {
+
+    if (currentFilter !== "all" && t.type !== currentFilter) return;
+
+   
+    if (!t.task.toLowerCase().includes(search) &&
+        !t.student.toLowerCase().includes(search)) return;
+
+    let li = document.createElement("li");
+
+    li.innerHTML = `
+      <b>${t.task}</b> (${t.student})<br>
+      ${t.type} | 📅 ${t.date}
+      <button class="delete-btn" onclick="deleteTask(${i})">X</button>
+    `;
+
+    if (t.done) li.classList.add("checked");
+
+    li.addEventListener("click", (e)=>{
+      if(e.target.tagName==="BUTTON") return;
+      t.done = !t.done;
+      save();
+      render();
+    });
+
+    list.appendChild(li);
+  });
+}
+
+// DELETE
+function deleteTask(i){
+  tasks.splice(i,1);
+  save();
+  render();
+}
+
+// FILTER
+function filterTasks(type){
+  currentFilter = type;
+  render();
+}
+
+// SAVE
+function save(){
+  localStorage.setItem("teacherData", JSON.stringify(tasks));
+}
+
+// LOAD
+function load(){
+  let data = localStorage.getItem("teacherData");
+  tasks = data ? JSON.parse(data) : [];
+  render();
+}
+
+// CLEAR
+function clearAll(){
+  if(confirm("Delete all tasks?")){
+    tasks = [];
+    localStorage.removeItem("teacherData");
+    render();
+  }
+}
+
+// 🌙 DARK MODE
+function toggleDark(){
+  document.body.classList.toggle("dark");
+}
+
+load();
+</script>
+
+</body>
+</html>
